@@ -1,0 +1,55 @@
+﻿--1
+SELECT C.CounterpartyID, C.Name, COUNT(distinct T.AssetID) Cnt
+FROM tblCounterparty C JOIN tblTransaction T on C.CounterpartyID = T.RcvID
+WHERE C.IsActive = 1
+GROUP BY C.CounterpartyID, C.Name
+having COUNT(distinct T.AssetID) > 1
+UNION
+SELECT C.CounterpartyID, C.Name, COUNT(distinct T.AssetID) Cnt
+FROM tblCounterparty C JOIN tblTransaction T on C.CounterpartyID = T.SndID
+WHERE C.IsActive = 1
+GROUP BY C.CounterpartyID, C.Name
+having COUNT(distinct T.AssetID) > 1
+
+--2
+SELECT CounterpartyID, Name, AssetID, SUM(CounterpartyQuantities.Quantity) AS Quantity
+FROM (SELECT C.CounterpartyID, C.Name, T.AssetID, SUM(T.Quantity) AS Quantity
+FROM tblCounterparty C JOIN tblTransaction T ON C.CounterpartyID = T.RcvID
+WHERE C.IsActive = 1
+GROUP BY C.CounterpartyID, C.Name, T.AssetID
+UNION
+SELECT C.CounterpartyID, C.Name, T.AssetID, -SUM(T.Quantity) AS Quantity
+FROM tblCounterparty C JOIN tblTransaction T ON C.CounterpartyID = T.SndID
+WHERE C.IsActive = 1
+GROUP BY C.CounterpartyID, C.Name, T.AssetID)
+AS CounterpartyQuantities
+GROUP BY CounterpartyID, Name, AssetID
+
+--3
+SELECT CounterpartyID, Name, SUM(CounterpartyQuantities.Quantity) AS Oborot
+FROM (SELECT C.CounterpartyID, C.Name, SUM(T.Quantity) AS Quantity
+FROM tblCounterparty C JOIN tblTransaction T ON C.CounterpartyID = T.RcvID
+GROUP BY C.CounterpartyID, C.Name
+UNION
+SELECT C.CounterpartyID, C.Name, -SUM(T.Quantity) AS Oborot
+FROM tblCounterparty C JOIN tblTransaction T ON C.CounterpartyID = T.SndID
+GROUP BY C.CounterpartyID, C.Name)
+AS CounterpartyQuantities
+GROUP BY CounterpartyID, Name
+
+--4
+DECLARE @ADate DATETIME
+DECLARE @DaysCount int
+SET @ADate = GETDATE()
+SET @DaysCount = DAY(EOMONTH(@ADate))
+
+SELECT CounterpartyID, Name, SUM(CounterpartyQuantities.Quantity) * @DaysCount AS Oborot
+FROM (SELECT C.CounterpartyID, C.Name, SUM(T.Quantity) AS Quantity
+FROM tblCounterparty C JOIN tblTransaction T ON C.CounterpartyID = T.RcvID
+GROUP BY C.CounterpartyID, C.Name
+UNION
+SELECT C.CounterpartyID, C.Name, -SUM(T.Quantity) AS Oborot
+FROM tblCounterparty C JOIN tblTransaction T ON C.CounterpartyID = T.SndID
+GROUP BY C.CounterpartyID, C.Name)
+AS CounterpartyQuantities
+GROUP BY CounterpartyID, Name

@@ -1,0 +1,5 @@
+﻿-- 1
+SELECT B.Name FROM tblBook B LEFT JOIN tblBookLibrary BL ON B.BookID = BL.BookID AND BL.Date > Convert(DATETIME, '01.02.2005', 104)
+-- 2
+SELECT B.Name FROM tblBook B LEFT JOIN tblBookLibrary BL ON B.BookID = BL.BookID
+WHERE BL.Date IS NULL OR BL.Date > Convert(DATETIME, '01.02.2005', 104)
